@@ -23,6 +23,15 @@ import streamlit as st
 # --------------------------------------------------------------------------- #
 DATA_PATH = Path(__file__).parent / "data" / "Influencer_data_FY26.xlsx"
 
+# Access control — password determines the role.
+#   Admin   : full access, including the data-upload option.
+#   Viewer  : read-only dashboard, no upload.
+# NOTE: For a production deployment, move these into st.secrets instead of code.
+PASSWORDS = {
+    "9999": "admin",
+    "1111": "viewer",
+}
+
 # Brand-ish palette
 PRIMARY = "#1f4e79"
 ACCENT = "#e07b39"
@@ -102,14 +111,57 @@ def fmt(num: float, suffix: str = "") -> str:
 
 
 # --------------------------------------------------------------------------- #
+# Authentication
+# --------------------------------------------------------------------------- #
+def require_login() -> str:
+    """Gate the app behind a password and return the resolved role.
+
+    Stops execution and renders a login form until a valid password is entered.
+    """
+    if st.session_state.get("role"):
+        return st.session_state["role"]
+
+    st.title("🔒 Influencers Performance Dashboard — FY26")
+    st.caption("Please enter your access password to continue.")
+
+    with st.form("login_form"):
+        pwd = st.text_input("Password", type="password")
+        submitted = st.form_submit_button("Sign in")
+
+    if submitted:
+        role = PASSWORDS.get(pwd.strip())
+        if role:
+            st.session_state["role"] = role
+            st.rerun()
+        else:
+            st.error("Incorrect password. Please try again.")
+
+    st.stop()
+
+
+role = require_login()
+is_admin = role == "admin"
+
+
+# --------------------------------------------------------------------------- #
 # Load
 # --------------------------------------------------------------------------- #
 st.sidebar.title("📊 Influencer Sales")
 st.sidebar.caption("Performance Dashboard — FY26")
 
-uploaded = st.sidebar.file_uploader(
-    "Upload latest data (optional)", type=["xlsx"], help="Defaults to bundled FY26 data"
-)
+# Show who is signed in + a sign-out control.
+st.sidebar.success(f"Signed in as **{role.title()}**")
+if st.sidebar.button("Sign out"):
+    st.session_state.pop("role", None)
+    st.rerun()
+
+# Upload is an admin-only capability.
+if is_admin:
+    uploaded = st.sidebar.file_uploader(
+        "Upload latest data", type=["xlsx"], help="Defaults to bundled FY26 data"
+    )
+else:
+    uploaded = None
 
 try:
     df = load_data(uploaded.getvalue()) if uploaded else load_data()

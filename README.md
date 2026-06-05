@@ -4,6 +4,20 @@ An interactive **Streamlit** dashboard to track influencer-driven sales
 performance on a monthly basis. The headline metric is **Quantity Purchased
 (MT)** generated through influencers across distributors and dealers.
 
+## Access control
+
+The dashboard is password protected with two roles, differentiated by the
+password entered on the login screen:
+
+| Password | Role | Access |
+| --- | --- | --- |
+| `1111` | Viewer | Full read-only dashboard |
+| `9999` | Admin | Everything + the **data upload** option |
+
+The upload control is shown **only to admins**. Passwords are defined in the
+`PASSWORDS` map in `app.py` — for a production deployment move these into
+`st.secrets` rather than keeping them in code.
+
 ## Features
 
 - **KPI cards** — total volume (MT), transactions, active influencers,
@@ -16,8 +30,8 @@ performance on a monthly basis. The headline metric is **Quantity Purchased
   distributor × verification-status breakdown.
 - **Data tab** — filtered record table with CSV download.
 - **Filters** (sidebar) — Month, Distributor, Verification Status, Quantity
-  range, plus free-text search for Influencer and Dealer. You can also upload a
-  refreshed `.xlsx` to swap the dataset live.
+  range, plus free-text search for Influencer and Dealer. Admins can also
+  upload a refreshed `.xlsx` to swap the dataset live.
 
 ## Data
 
