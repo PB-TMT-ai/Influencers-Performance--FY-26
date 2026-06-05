@@ -173,32 +173,43 @@ except FileNotFoundError:
 
 
 # --------------------------------------------------------------------------- #
-# Sidebar filters
+# Header
 # --------------------------------------------------------------------------- #
-st.sidebar.header("Filters")
+st.title("Influencers Performance Dashboard — FY26")
+st.caption(
+    "Monthly sales performance generated through influencers across distributors and dealers. "
+    "Use the filters below to slice by month, distributor, verification status and more."
+)
 
 
-def multiselect_all(label: str, options: list[str], key: str) -> list[str]:
+# --------------------------------------------------------------------------- #
+# Filters — on the main page so everyone can see and apply them
+# --------------------------------------------------------------------------- #
+def multiselect_all(container, label: str, options: list[str], key: str) -> list[str]:
     """A multiselect that treats 'empty' as 'all selected'."""
     opts = sorted(o for o in options if o)
-    chosen = st.sidebar.multiselect(label, opts, default=[], key=key)
+    chosen = container.multiselect(label, opts, default=[], key=key)
     return chosen if chosen else opts
 
 
-months = multiselect_all("Month", df["Month_Label"].dropna().unique().tolist(), "f_month")
-distributors = multiselect_all("Distributor", df["Distributor"].unique().tolist(), "f_dist")
-statuses = multiselect_all(
-    "Verification Status", df["Verification_Status"].unique().tolist(), "f_status"
-)
+with st.expander("🔎 Filters", expanded=True):
+    r1c1, r1c2, r1c3 = st.columns(3)
+    months = multiselect_all(
+        r1c1, "Month", df["Month_Label"].dropna().unique().tolist(), "f_month"
+    )
+    distributors = multiselect_all(
+        r1c2, "Distributor", df["Distributor"].unique().tolist(), "f_dist"
+    )
+    statuses = multiselect_all(
+        r1c3, "Verification Status", df["Verification_Status"].unique().tolist(), "f_status"
+    )
 
-influencer_search = st.sidebar.text_input("Search Influencer", "").strip().lower()
-dealer_search = st.sidebar.text_input("Search Dealer", "").strip().lower()
+    r2c1, r2c2, r2c3 = st.columns(3)
+    influencer_search = r2c1.text_input("Search Influencer", "").strip().lower()
+    dealer_search = r2c2.text_input("Search Dealer", "").strip().lower()
 
-# Quantity range
-qmin, qmax = float(df["Quantity_MT"].min()), float(df["Quantity_MT"].max())
-qty_range = st.sidebar.slider(
-    "Quantity Purchased (MT)", qmin, qmax, (qmin, qmax)
-)
+    qmin, qmax = float(df["Quantity_MT"].min()), float(df["Quantity_MT"].max())
+    qty_range = r2c3.slider("Quantity Purchased (MT)", qmin, qmax, (qmin, qmax))
 
 # Apply filters
 mask = (
@@ -213,16 +224,6 @@ if dealer_search:
     mask &= df["Dealer"].str.lower().str.contains(dealer_search, na=False)
 
 fdf = df[mask].copy()
-
-
-# --------------------------------------------------------------------------- #
-# Header
-# --------------------------------------------------------------------------- #
-st.title("Influencers Performance Dashboard — FY26")
-st.caption(
-    "Monthly sales performance generated through influencers across distributors and dealers. "
-    "Use the sidebar to slice by month, distributor, verification status and more."
-)
 
 if fdf.empty:
     st.warning("No records match the selected filters.")

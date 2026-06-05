@@ -29,9 +29,10 @@ The upload control is shown **only to admins**. Passwords are defined in the
 - **Distributors & Dealers tab** — top distributors and dealers, plus a
   distributor × verification-status breakdown.
 - **Data tab** — filtered record table with CSV download.
-- **Filters** (sidebar) — Month, Distributor, Verification Status, Quantity
-  range, plus free-text search for Influencer and Dealer. Admins can also
-  upload a refreshed `.xlsx` to swap the dataset live.
+- **Filters** (on the dashboard page, visible to everyone) — Month,
+  Distributor, Verification Status, Quantity range, plus free-text search for
+  Influencer and Dealer. Admins can also upload a refreshed `.xlsx` from the
+  sidebar to swap the dataset live.
 
 ## Data
 
