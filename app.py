@@ -231,6 +231,31 @@ else:
     )
 
 
+def influencer_rank(full_df: pd.DataFrame, name: str) -> tuple[int, int, float, float]:
+    """Return (rank, total_influencers, own_volume, leader_volume) by volume."""
+    board = full_df.groupby("Influencer")["Quantity_MT"].sum().sort_values(ascending=False)
+    rank = int(board.index.get_loc(name)) + 1 if name in board.index else 0
+    own = float(board.get(name, 0.0))
+    leader = float(board.iloc[0]) if len(board) else 0.0
+    return rank, len(board), own, leader
+
+
+# Personalised rank callout — computed against ALL influencers (full dataset).
+if is_influencer:
+    rank, total, own_vol, leader_vol = influencer_rank(base_df, auth["name"])
+    top_pct = max(1, round(rank / total * 100)) if total else 0
+    rc1, rc2, rc3 = st.columns(3)
+    rc1.metric("🏆 Your Rank", f"#{rank} of {total}")
+    rc2.metric("Your Volume (MT)", f"{own_vol:,.2f}")
+    rc3.metric("Standing", f"Top {top_pct}%")
+    if rank == 1:
+        st.success("You're the #1 influencer by volume. 🎉")
+    else:
+        st.info(
+            f"You need **{leader_vol - own_vol:,.2f} MT** more to reach the #1 spot."
+        )
+
+
 # --------------------------------------------------------------------------- #
 # Filters — on the main page so everyone can see and apply them
 # --------------------------------------------------------------------------- #
@@ -460,6 +485,9 @@ with tab_data:
         "Verification_Status",
         "Phone",
     ]
+    # Hide sensitive columns from influencers (phone numbers / SF IDs).
+    if is_influencer:
+        show_cols = [c for c in show_cols if c not in {"Phone", "Influencer"}]
     table = fdf[show_cols].sort_values("Purchase_Date", ascending=False)
     st.dataframe(
         table,
