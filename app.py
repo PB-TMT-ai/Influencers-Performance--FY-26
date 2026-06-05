@@ -113,25 +113,47 @@ def fmt(num: float, suffix: str = "") -> str:
 # --------------------------------------------------------------------------- #
 # Authentication
 # --------------------------------------------------------------------------- #
-def require_login() -> str:
-    """Gate the app behind a password and return the resolved role.
+def phone_directory(df: pd.DataFrame) -> dict[str, str]:
+    """Map each known phone number -> influencer name (for influencer logins)."""
+    valid = df[df["Phone"] != ""]
+    return valid.groupby("Phone")["Influencer"].first().to_dict()
 
-    Stops execution and renders a login form until a valid password is entered.
+
+def require_login(df: pd.DataFrame) -> dict:
+    """Gate the app behind a password and return the resolved session info.
+
+    A password can be one of:
+      * an admin / viewer password (see ``PASSWORDS``), or
+      * an influencer's phone number — which scopes the view to their own data.
+
+    Returns a dict: ``{"role", "phone", "name"}``. Stops execution and renders
+    a login form until a valid password is entered.
     """
-    if st.session_state.get("role"):
-        return st.session_state["role"]
+    if st.session_state.get("auth"):
+        return st.session_state["auth"]
 
     st.title("🔒 Influencers Performance Dashboard — FY26")
-    st.caption("Please enter your access password to continue.")
+    st.caption(
+        "Enter your access password to continue. "
+        "Influencers: use your registered phone number to view your own data."
+    )
 
     with st.form("login_form"):
         pwd = st.text_input("Password", type="password")
         submitted = st.form_submit_button("Sign in")
 
     if submitted:
-        role = PASSWORDS.get(pwd.strip())
-        if role:
-            st.session_state["role"] = role
+        entry = pwd.strip()
+        directory = phone_directory(df)
+        if entry in PASSWORDS:
+            auth = {"role": PASSWORDS[entry], "phone": None, "name": None}
+        elif entry in directory:
+            auth = {"role": "influencer", "phone": entry, "name": directory[entry]}
+        else:
+            auth = None
+
+        if auth:
+            st.session_state["auth"] = auth
             st.rerun()
         else:
             st.error("Incorrect password. Please try again.")
@@ -139,8 +161,17 @@ def require_login() -> str:
     st.stop()
 
 
-role = require_login()
+# Load the bundled dataset first so influencer phone logins can be validated.
+try:
+    base_df = load_data()
+except FileNotFoundError:
+    st.error("Data file not found. Place `Influencer_data_FY26.xlsx` under `data/`.")
+    st.stop()
+
+auth = require_login(base_df)
+role = auth["role"]
 is_admin = role == "admin"
+is_influencer = role == "influencer"
 
 
 # --------------------------------------------------------------------------- #
@@ -150,9 +181,13 @@ st.sidebar.title("📊 Influencer Sales")
 st.sidebar.caption("Performance Dashboard — FY26")
 
 # Show who is signed in + a sign-out control.
-st.sidebar.success(f"Signed in as **{role.title()}**")
+if is_influencer:
+    st.sidebar.success(f"Signed in as **{auth['name']}**")
+    st.sidebar.caption("Influencer view — showing only your data")
+else:
+    st.sidebar.success(f"Signed in as **{role.title()}**")
 if st.sidebar.button("Sign out"):
-    st.session_state.pop("role", None)
+    st.session_state.pop("auth", None)
     st.rerun()
 
 # Upload is an admin-only capability.
@@ -164,22 +199,36 @@ else:
     uploaded = None
 
 try:
-    df = load_data(uploaded.getvalue()) if uploaded else load_data()
+    df = load_data(uploaded.getvalue()) if uploaded else base_df
 except FileNotFoundError:
     st.error(
         "Data file not found. Upload an `Influencer_data_FY26.xlsx` from the sidebar."
     )
     st.stop()
 
+# Influencers only ever see their own rows.
+if is_influencer:
+    df = df[df["Phone"] == auth["phone"]].copy()
+    if df.empty:
+        st.warning("No records found for your account.")
+        st.stop()
+
 
 # --------------------------------------------------------------------------- #
 # Header
 # --------------------------------------------------------------------------- #
-st.title("Influencers Performance Dashboard — FY26")
-st.caption(
-    "Monthly sales performance generated through influencers across distributors and dealers. "
-    "Use the filters below to slice by month, distributor, verification status and more."
-)
+if is_influencer:
+    st.title(f"Performance Dashboard — {auth['name']}")
+    st.caption(
+        "Your monthly sales performance. "
+        "Use the filters below to slice by month, dealer and more."
+    )
+else:
+    st.title("Influencers Performance Dashboard — FY26")
+    st.caption(
+        "Monthly sales performance generated through influencers across distributors and dealers. "
+        "Use the filters below to slice by month, distributor, verification status and more."
+    )
 
 
 # --------------------------------------------------------------------------- #

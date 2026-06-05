@@ -11,12 +11,20 @@ password entered on the login screen:
 
 | Password | Role | Access |
 | --- | --- | --- |
-| `1111` | Viewer | Full read-only dashboard |
+| `1111` | Viewer | Full read-only dashboard (all influencers) |
 | `9999` | Admin | Everything + the **data upload** option |
+| _phone number_ | Influencer | Their **own data only**, scoped automatically |
 
-The upload control is shown **only to admins**. Passwords are defined in the
-`PASSWORDS` map in `app.py` — for a production deployment move these into
-`st.secrets` rather than keeping them in code.
+- The upload control is shown **only to admins**.
+- **Influencers** sign in with their registered **phone number** as the
+  password; the dashboard then shows only the rows belonging to that phone, with
+  a personalised header. Influencers whose phone number is missing from the data
+  cannot log in this way.
+- The `1111` / `9999` passwords are reserved and never collide with phone
+  numbers. They are defined in the `PASSWORDS` map in `app.py` — for a
+  production deployment move these into `st.secrets` rather than keeping them in
+  code. Note that phone-number passwords are convenient but guessable, so this
+  is light-touch gating rather than strong security.
 
 ## Features
 
