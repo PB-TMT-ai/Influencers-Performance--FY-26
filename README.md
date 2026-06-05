@@ -15,7 +15,10 @@ password entered on the login screen:
 | `9999` | Admin | Everything + the **data upload** option |
 | _phone number_ | Influencer | Their **own data only**, scoped automatically |
 
-- The upload control is shown **only to admins**.
+- The upload control is shown **only to admins**. After uploading a refreshed
+  `.xlsx`, the admin can click **"Save as default dataset"** to persist it — it
+  then becomes the dataset everyone sees (viewers and influencer logins
+  included). Without saving, an upload only previews in the admin's own session.
 - **Influencers** sign in with their registered **phone number** as the
   password; the dashboard then shows only the rows belonging to that phone, with
   a personalised header. They also get a **rank callout** showing where they

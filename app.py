@@ -195,6 +195,22 @@ if is_admin:
     uploaded = st.sidebar.file_uploader(
         "Upload latest data", type=["xlsx"], help="Defaults to bundled FY26 data"
     )
+    if uploaded is not None:
+        st.sidebar.caption("Previewing uploaded file in this session.")
+        if st.sidebar.button("💾 Save as default dataset", type="primary"):
+            data_bytes = uploaded.getvalue()
+            try:
+                load_data(data_bytes)  # validate it parses before persisting
+            except Exception as exc:  # noqa: BLE001
+                st.sidebar.error(f"Could not read this file: {exc}")
+            else:
+                DATA_PATH.parent.mkdir(parents=True, exist_ok=True)
+                DATA_PATH.write_bytes(data_bytes)
+                load_data.clear()  # drop cached copy so everyone gets the new data
+                st.sidebar.success(
+                    "Saved. This is now the default dataset for all users."
+                )
+                st.rerun()
 else:
     uploaded = None
 
