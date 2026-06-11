@@ -283,35 +283,27 @@ def multiselect_all(container, label: str, options: list[str], key: str) -> list
 
 
 with st.expander("🔎 Filters", expanded=True):
-    r1c1, r1c2, r1c3 = st.columns(3)
+    fc1, fc2, fc3, fc4 = st.columns(4)
     months = multiselect_all(
-        r1c1, "Month", df["Month_Label"].dropna().unique().tolist(), "f_month"
+        fc1, "Month", df["Month_Label"].dropna().unique().tolist(), "f_month"
     )
     distributors = multiselect_all(
-        r1c2, "Distributor", df["Distributor"].unique().tolist(), "f_dist"
+        fc2, "Distributor", df["Distributor"].unique().tolist(), "f_dist"
     )
-    statuses = multiselect_all(
-        r1c3, "Verification Status", df["Verification_Status"].unique().tolist(), "f_status"
+    influencers = multiselect_all(
+        fc3, "Influencer", df["Influencer"].unique().tolist(), "f_infl"
     )
-
-    r2c1, r2c2, r2c3 = st.columns(3)
-    influencer_search = r2c1.text_input("Search Influencer", "").strip().lower()
-    dealer_search = r2c2.text_input("Search Dealer", "").strip().lower()
-
-    qmin, qmax = float(df["Quantity_MT"].min()), float(df["Quantity_MT"].max())
-    qty_range = r2c3.slider("Quantity Purchased (MT)", qmin, qmax, (qmin, qmax))
+    dealers = multiselect_all(
+        fc4, "Dealer", df["Dealer"].unique().tolist(), "f_dealer"
+    )
 
 # Apply filters
 mask = (
     df["Month_Label"].isin(months)
     & df["Distributor"].isin(distributors)
-    & df["Verification_Status"].isin(statuses)
-    & df["Quantity_MT"].between(qty_range[0], qty_range[1])
+    & df["Influencer"].isin(influencers)
+    & df["Dealer"].isin(dealers)
 )
-if influencer_search:
-    mask &= df["Influencer"].str.lower().str.contains(influencer_search, na=False)
-if dealer_search:
-    mask &= df["Dealer"].str.lower().str.contains(dealer_search, na=False)
 
 fdf = df[mask].copy()
 

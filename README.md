@@ -44,9 +44,9 @@ password entered on the login screen:
   distributor × verification-status breakdown.
 - **Data tab** — filtered record table with CSV download.
 - **Filters** (on the dashboard page, visible to everyone) — Month,
-  Distributor, Verification Status, Quantity range, plus free-text search for
-  Influencer and Dealer. Admins can also upload a refreshed `.xlsx` from the
-  sidebar to swap the dataset live.
+  Distributor, Influencer and Dealer, all as multi-select dropdowns (empty =
+  all). Admins can also upload a refreshed `.xlsx` from the sidebar to swap the
+  dataset live.
 
 ## Data
 
