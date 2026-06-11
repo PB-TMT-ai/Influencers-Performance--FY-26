@@ -32,6 +32,29 @@ password entered on the login screen:
   code. Note that phone-number passwords are convenient but guessable, so this
   is light-touch gating rather than strong security.
 
+## Influencer Scheme (Q1 FY26-27)
+
+The dashboard incorporates the JSW One TMT **Influencer Scheme** (1st April –
+30th June 2026). Each influencer's **cumulative Quantity (MT)** — identified
+uniquely by **name + phone number**, counting all recorded sales — maps to a
+gift slab:
+
+| Quantity (MT) | Gift |
+| --- | --- |
+| 3 – 5 | Portable Blender |
+| >5 – 10 | Pedestal Fan |
+| >10 – 20 | Tower Fan |
+| >20 – 35 | Air Cooler |
+| >35 – 50 | Fridge |
+| >50 – 75 | Air Conditioner |
+| >75 | International Trip |
+
+- A **🎁 Scheme & Rewards** tab shows the slab table, qualifying criteria, a
+  slab-distribution chart, and (for admins/viewers) a downloadable
+  qualification roster of every influencer with their total MT and gift.
+- **Influencers** see a personal callout: what they've won, and how many more MT
+  they need to reach the next gift.
+
 ## Features
 
 - **KPI cards** — total volume (MT), transactions, active influencers,

@@ -32,6 +32,26 @@ PASSWORDS = {
     "1111": "viewer",
 }
 
+# --------------------------------------------------------------------------- #
+# Influencer Scheme — JSW One TMT (Q1 FY26-27, 1 Apr – 30 Jun 2026)
+# Gift is decided by an influencer's CUMULATIVE Quantity (MT) over the period.
+# Each slab is (lower_bound, upper_inclusive, gift); the first slab starts at 3.
+# --------------------------------------------------------------------------- #
+SCHEME_PERIOD = "1st April 2026 – 30th June 2026 (Q1 FY26-27)"
+SLABS = [
+    (3, 5, "Portable Blender"),
+    (5, 10, "Pedestal Fan"),
+    (10, 20, "Tower Fan"),
+    (20, 35, "Air Cooler"),
+    (35, 50, "Fridge"),
+    (50, 75, "Air Conditioner"),
+    (75, float("inf"), "International Trip"),
+]
+# Pretty range labels matching the official scheme flyer.
+SCHEME_RANGE_LABELS = [
+    "3 – 5", ">5 – 10", ">10 – 20", ">20 – 35", ">35 – 50", ">50 – 75", ">75",
+]
+
 # Brand-ish palette
 PRIMARY = "#1f4e79"
 ACCENT = "#e07b39"
@@ -108,6 +128,53 @@ def fmt(num: float, suffix: str = "") -> str:
     if num >= 1_000:
         return f"{num/1_000:.2f}K{suffix}"
     return f"{num:,.2f}{suffix}" if isinstance(num, float) else f"{num:,}{suffix}"
+
+
+# --------------------------------------------------------------------------- #
+# Scheme helpers
+# --------------------------------------------------------------------------- #
+def assign_gift(qty: float) -> str:
+    """Return the gift an influencer qualifies for at a cumulative volume."""
+    if qty < SLABS[0][0]:
+        return "Not qualified"
+    for _lo, hi, gift in SLABS:
+        if qty <= hi:
+            return gift
+    return SLABS[-1][2]
+
+
+def next_gift(qty: float) -> tuple[str | None, float]:
+    """Return (next gift, MT still needed) — or (None, 0) at the top slab."""
+    if qty < SLABS[0][0]:
+        return SLABS[0][2], round(SLABS[0][0] - qty, 2)
+    for i, (_lo, hi, _gift) in enumerate(SLABS):
+        if qty <= hi:
+            if hi == float("inf"):
+                return None, 0.0
+            return SLABS[i + 1][2], round(hi - qty, 2)
+    return None, 0.0
+
+
+def scheme_table() -> pd.DataFrame:
+    """The official slab → gift reference table."""
+    return pd.DataFrame(
+        {
+            "Quantity (MT)": SCHEME_RANGE_LABELS,
+            "Gift": [g for _lo, _hi, g in SLABS],
+        }
+    )
+
+
+def qualifiers(full_df: pd.DataFrame) -> pd.DataFrame:
+    """Per-influencer (Name + Phone) cumulative volume and qualified gift."""
+    q = (
+        full_df.groupby(["Influencer", "Phone"], as_index=False)["Quantity_MT"]
+        .sum()
+        .rename(columns={"Quantity_MT": "Total_MT"})
+        .sort_values("Total_MT", ascending=False)
+    )
+    q["Gift"] = q["Total_MT"].apply(assign_gift)
+    return q
 
 
 # --------------------------------------------------------------------------- #
@@ -256,20 +323,38 @@ def influencer_rank(full_df: pd.DataFrame, name: str) -> tuple[int, int, float, 
     return rank, len(board), own, leader
 
 
-# Personalised rank callout — computed against ALL influencers (full dataset).
+# Personalised rank + scheme callout — computed against ALL influencers (full data).
 if is_influencer:
     rank, total, own_vol, leader_vol = influencer_rank(base_df, auth["name"])
+    # Cumulative volume for the scheme uses this influencer's Name + Phone.
+    my_total = float(
+        base_df.loc[base_df["Phone"] == auth["phone"], "Quantity_MT"].sum()
+    )
+    my_gift = assign_gift(my_total)
+    nxt, need = next_gift(my_total)
     top_pct = max(1, round(rank / total * 100)) if total else 0
-    rc1, rc2, rc3 = st.columns(3)
+
+    rc1, rc2, rc3, rc4 = st.columns(4)
     rc1.metric("🏆 Your Rank", f"#{rank} of {total}")
-    rc2.metric("Your Volume (MT)", f"{own_vol:,.2f}")
+    rc2.metric("Your Volume (MT)", f"{my_total:,.2f}")
     rc3.metric("Standing", f"Top {top_pct}%")
-    if rank == 1:
-        st.success("You're the #1 influencer by volume. 🎉")
-    else:
-        st.info(
-            f"You need **{leader_vol - own_vol:,.2f} MT** more to reach the #1 spot."
+    rc4.metric("🎁 You've Won", my_gift)
+
+    if my_gift == "Not qualified":
+        st.warning(
+            f"You need **{need:,.2f} MT** more to unlock your first gift "
+            f"(**{nxt}** at 3 MT). Keep going!"
         )
+    elif nxt:
+        st.success(
+            f"You've qualified for a **{my_gift}**! "
+            f"Just **{need:,.2f} MT** more to upgrade to a **{nxt}**. 🚀"
+        )
+    else:
+        st.success(
+            f"Incredible — you've qualified for the top reward, an **{my_gift}**! 🌍✈️"
+        )
+    st.caption(f"Scheme period: {SCHEME_PERIOD}. Gift based on your cumulative volume.")
 
 
 # --------------------------------------------------------------------------- #
@@ -339,9 +424,90 @@ st.divider()
 # --------------------------------------------------------------------------- #
 # Tabs
 # --------------------------------------------------------------------------- #
-tab_overview, tab_influencers, tab_partners, tab_data = st.tabs(
-    ["📈 Overview", "🧑‍🔧 Influencers", "🏭 Distributors & Dealers", "🗂️ Data"]
+tab_scheme, tab_overview, tab_influencers, tab_partners, tab_data = st.tabs(
+    [
+        "🎁 Scheme & Rewards",
+        "📈 Overview",
+        "🧑‍🔧 Influencers",
+        "🏭 Distributors & Dealers",
+        "🗂️ Data",
+    ]
 )
+
+with tab_scheme:
+    st.subheader("JSW One TMT — Influencer Scheme")
+    st.caption(f"Win exciting prizes • {SCHEME_PERIOD}")
+
+    left, right = st.columns([3, 2])
+    with left:
+        st.markdown("**Reward slabs** — gift by cumulative Quantity (MT)")
+        st.dataframe(scheme_table(), hide_index=True, use_container_width=True)
+    with right:
+        st.markdown("**Qualifying criteria**")
+        st.markdown(
+            "- Consumer sales through Contractor/Mason must be recorded with the "
+            "dealer/distributor.\n"
+            "- Total sales of dealer through contractor/mason in Q1 FY26-27 "
+            "(1st April – 30th June) are considered for the qualifying slab.\n"
+            "- Each influencer is identified uniquely by **name + phone number**.\n"
+            "- Verification (Name, Mobile, Address, KYC) is mandatory before gift "
+            "disbursement."
+        )
+
+    if is_influencer:
+        # Personal scheme status was shown in the callout above; reinforce here.
+        st.info(
+            f"**{auth['name']}** — cumulative **{my_total:,.2f} MT** → "
+            f"**{my_gift}**"
+            + (f" • {need:,.2f} MT more for a {nxt}." if nxt else " (top reward!).")
+        )
+    else:
+        # Admin / viewer: full qualification roster + slab distribution.
+        qual = qualifiers(base_df)
+        qualified = qual[qual["Gift"] != "Not qualified"]
+        k1, k2, k3 = st.columns(3)
+        k1.metric("Total Influencers", f"{len(qual):,}")
+        k2.metric("Qualified for a Gift", f"{len(qualified):,}")
+        k3.metric("International Trip Winners", f"{(qual['Gift'] == 'International Trip').sum():,}")
+
+        gift_order = [g for _lo, _hi, g in SLABS] + ["Not qualified"]
+        dist_counts = (
+            qual["Gift"].value_counts().reindex(gift_order).fillna(0).astype(int)
+        )
+        fig_gift = px.bar(
+            x=dist_counts.values,
+            y=dist_counts.index,
+            orientation="h",
+            title="Influencers by Reward Slab",
+            text=dist_counts.values,
+            color=dist_counts.values,
+            color_continuous_scale=SEQ,
+        )
+        fig_gift.update_layout(
+            xaxis_title="Influencers", yaxis_title="", coloraxis_showscale=False,
+            yaxis={"categoryorder": "array", "categoryarray": gift_order[::-1]},
+        )
+        st.plotly_chart(fig_gift, use_container_width=True)
+
+        st.subheader("Qualification Roster")
+        gift_filter = st.multiselect(
+            "Filter by gift", gift_order, default=[], key="scheme_gift"
+        )
+        roster = qual if not gift_filter else qual[qual["Gift"].isin(gift_filter)]
+        st.dataframe(
+            roster.reset_index(drop=True),
+            use_container_width=True,
+            hide_index=True,
+            column_config={
+                "Total_MT": st.column_config.NumberColumn("Total (MT)", format="%.2f"),
+            },
+        )
+        st.download_button(
+            "⬇️ Download qualification roster (CSV)",
+            roster.to_csv(index=False).encode("utf-8"),
+            file_name="influencer_scheme_qualifiers.csv",
+            mime="text/csv",
+        )
 
 with tab_overview:
     col_a, col_b = st.columns([3, 2])
