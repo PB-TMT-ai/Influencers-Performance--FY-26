@@ -649,6 +649,12 @@ with tab_partners:
 
 with tab_data:
     st.subheader("Filtered Records")
+
+    # Attach each influencer's qualified gift (by cumulative Name + Phone total).
+    gift_lookup = qualifiers(base_df)[["Influencer", "Phone", "Gift"]]
+    fdf = fdf.merge(gift_lookup, on=["Influencer", "Phone"], how="left")
+    fdf["Gift"] = fdf["Gift"].fillna("Not qualified")
+
     show_cols = [
         "Purchase_Date",
         "Month_Label",
@@ -656,6 +662,7 @@ with tab_data:
         "Influencer",
         "Dealer",
         "Quantity_MT",
+        "Gift",
         "Verification_Status",
         "Phone",
     ]
