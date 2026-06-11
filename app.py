@@ -424,10 +424,10 @@ st.divider()
 # --------------------------------------------------------------------------- #
 # Tabs
 # --------------------------------------------------------------------------- #
-tab_scheme, tab_overview, tab_influencers, tab_partners, tab_data = st.tabs(
+tab_overview, tab_scheme, tab_influencers, tab_partners, tab_data = st.tabs(
     [
-        "🎁 Scheme & Rewards",
         "📈 Overview",
+        "🎁 Scheme & Rewards",
         "🧑‍🔧 Influencers",
         "🏭 Distributors & Dealers",
         "🗂️ Data",
