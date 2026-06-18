@@ -4,6 +4,13 @@ An interactive **Streamlit** dashboard to track influencer-driven sales
 performance on a monthly basis. The headline metric is **Quantity Purchased
 (MT)** generated through influencers across distributors and dealers.
 
+## Availability
+
+Access is governed by the `ACCESS_ENABLED` switch at the top of `app.py`. When
+`False`, the dashboard is fully locked down for **everyone** (viewer, influencer
+and admin) and renders a blank page showing only "offline". Set it back to
+`True` to restore access.
+
 ## Access control
 
 The dashboard is password protected with two roles, differentiated by the

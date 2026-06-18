@@ -32,6 +32,10 @@ PASSWORDS = {
     "1111": "viewer",
 }
 
+# Master access switch. When False, the dashboard is fully locked down — every
+# login (viewer, influencer and admin) is blocked and a notice is shown instead.
+ACCESS_ENABLED = False
+
 # --------------------------------------------------------------------------- #
 # Influencer Scheme — JSW One TMT (Q1 FY26-27, 1 Apr – 30 Jun 2026)
 # Gift is decided by an influencer's CUMULATIVE Quantity (MT) over the period.
@@ -227,6 +231,26 @@ def require_login(df: pd.DataFrame) -> dict:
 
     st.stop()
 
+
+# Master lockdown — block all access before any data load or login.
+if not ACCESS_ENABLED:
+    # Completely blank page — hide Streamlit chrome and show only "offline".
+    st.markdown(
+        """
+        <style>
+            #MainMenu, header, footer {visibility: hidden;}
+            .stApp {background: #ffffff;}
+            .offline {
+                position: fixed; top: 50%; left: 50%;
+                transform: translate(-50%, -50%);
+                font-size: 2rem; color: #888; font-family: sans-serif;
+            }
+        </style>
+        <div class="offline">offline</div>
+        """,
+        unsafe_allow_html=True,
+    )
+    st.stop()
 
 # Load the bundled dataset first so influencer phone logins can be validated.
 try:
